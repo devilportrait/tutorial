@@ -20,9 +20,23 @@ if __name__ == '__main__':
     now = current_milli_time()
 
     def tomongo(ptitle, ppid, doulistcount, likenum, postnum):
-        ii = collectionDongxi.insert({'title': ptitle, 'pid': ppid, 'douListCount': doulistcount,
-                                      'likeNum': likenum, 'postNum': postnum, 'tern': now})
-        return ii
+        doc = collectionDongxi.find({"_id": ppid})
+        if doc:
+            collectionDongxi.update({'_id': ppid},
+                                    {'$push': {"douListCounts": {"douListCount": doulistcount, "tern": now}}})
+
+            collectionDongxi.update({'_id': ppid},
+                                    {'$push': {"likeNums": {"likeNum": likenum, "tern": now}}})
+
+            collectionDongxi.update({'_id': ppid},
+                                    {'$push': {"postNums": {"postNum": postnum, "tern": now}}})
+        else:
+            collectionDongxi.insert({'_id': ppid,
+                                     'title': ptitle,
+                                     'douListCounts': [{"douListCount": doulistcount, "tern": now}],
+                                     'likeNums': [{'likeNum': likenum, 'tern': now}],
+                                     'postNums': [{'postNum': postnum, 'tern': now}]
+                                     })
 
     # 同步加载的前21条数据。暂时使用下方异步加载方式。
     '''
@@ -56,8 +70,11 @@ if __name__ == '__main__':
     '''
 
     totalCount = 0
-    # 异步加载的21条之后的数据
-    for i in range(0, 5, 1):
+    # 异步加载的数据:5000*21≈10w条
+    plan = 5000
+    for i in range(0, plan, 1):
+        time.sleep(5)  # 隔5毫秒请求一次
+
         start = 21 * i
         url = "https://dongxi.douban.com/j/search?start=" + str(start) + "&kind=3090&sort=1&q=%E9%93%B6%E9%A5%B0"
         response = requests.get(url)
@@ -91,7 +108,7 @@ if __name__ == '__main__':
                 continue
             else:
                 pid = targetElement.xpath("div[@class='card-main']/div[@class='card-bd']"
-                                            "/div[@class='story-info']/@data-eqid")[0]
+                                          "/div[@class='story-info']/@data-eqid")[0]
 
             if len(targetElement.xpath("div[@class='card-main']/div[@class='card-bd']/div[@class='story-info']"
                                        "/ul[@class='stats-list']")) == 0:
@@ -128,8 +145,8 @@ if __name__ == '__main__':
             douListCount = douListCountStr[5:]
             likeNum = likeStr[3:]
             postNum = postStr[3:]
-            r = tomongo(title, pid, douListCount, likeNum, postNum)
-            print r
+
+            tomongo(title, pid, douListCount, likeNum, postNum)
 
             loopCount += 1
             totalCount += 1
