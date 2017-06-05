@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     totalCount = 0
     # 异步加载的数据:5000*21≈10w条
-    plan = 5000
+    plan = 1480
     for i in range(0, plan, 1):
         time.sleep(5)  # 隔5毫秒请求一次
 
